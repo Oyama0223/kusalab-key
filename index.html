@@ -23,7 +23,7 @@
 </head>
 <body>
 
-  <h1>研究室 開錠・施錠 管理ページ Ver1.1</h1>
+  <h1>研究室 開錠・施錠 管理ページ Ver1.2</h1>
 
   <div id="status">🔓 開錠中</div>
 
@@ -78,13 +78,13 @@
       console.log(message);
 
       // メール送信用APIにPOSTリクエスト（仮想エンドポイント）
-      fetch("https://script.google.com/macros/s/AKfycbxKOSA4VMmpavrOpgcgHCUjVfkmZxAFr7lHneMp2N9zO4iA1A2VsnCqoEWhPXU6iwuQ/exec", {
+      fetch("https://script.google.com/macros/s/AKfycbwL3sVWxHpTCDTYPFAaW_I0jD-Phg6NfE-Ws6BXMJI1efXY0U62-046fWe_2cRRrnh-/exec", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          to: "genjinzhizuosuo@gmail.com",
+          to: "m22237@g.metro-cit.ac.jp",
           subject: "開錠/施錠通知",
           body: message
         })
