@@ -22,7 +22,7 @@
 </head>
 <body>
 
-  <h1>研究室 開錠・施錠 管理ページ Ver1.4</h1>
+  <h1>研究室 開錠・施錠 管理ページ Ver1.5</h1>
 
   <div id="status">🔓 開錠中</div>
 
@@ -76,6 +76,27 @@
 
       // コンソールログで確認
       console.log(message);
+
+      // メール送信用APIにPOSTリクエスト（仮想エンドポイント）
+      fetch("https://script.google.com/macros/s/AKfycbwL3sVWxHpTCDTYPFAaW_I0jD-Phg6NfE-Ws6BXMJI1efXY0U62-046fWe_2cRRrnh-/exec", {
+        method: "POST",
+        mode: "no-cors", // モードを no-cors に設定
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          to: "m22237@g.metro-cit.ac.jp",
+          subject: "開錠/施錠通知",
+          body: message
+        })
+      }).then(response => {
+        if (!response.ok) throw new Error("メール送信");
+        return response.text();
+      }).then(data => {
+        alert("メール送信成功: " + message);
+      }).catch(error => {
+        alert("メール送信エラー: " + error.message);
+      });
     }
 
     // ページ読み込み時にローカルストレージから状態を復元
