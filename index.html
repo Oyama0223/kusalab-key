@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>研究室 開錠・施錠 管理</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    #status {
+      font-size: 48px;
+      margin-bottom: 30px;
+      color: green;
+    }
+    select, button {
+      font-size: 20px;
+      margin: 10px;
+      padding: 10px 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>研究室 開錠・施錠 管理ページ</h1>
+
+  <div id="status">🔓 開錠中</div>
+
+  <div>
+    <label for="person">操作した人物を選択：</label>
+    <select id="person">
+      <option value="草谷">草谷</option>
+      <option value="堂林">堂林</option>
+      <option value="白崎">白崎</option>
+      <option value="澤田">澤田</option>
+     <option value="安藤">安藤</option>
+      <option value="森高">森高</option>
+      <option value="小山">小山</option>
+      <option value="中村">中村</option>
+      <option value="傳田">傳田</option>
+      <option value="朴">朴</option>
+    </select>
+  </div>
+
+  <div>
+    <button onclick="setStatus('open')">開錠</button>
+    <button onclick="setStatus('locked')">施錠</button>
+  </div>
+
+  <script>
+    let currentStatus = 'open'; // 初期状態は開錠
+
+    function setStatus(status) {
+      const person = document.getElementById("person").value;
+      const now = new Date();
+      const datetime = now.toLocaleString('ja-JP');
+      let statusText = "";
+      let color = "";
+      let message = "";
+
+      if (status === 'open') {
+        statusText = "🔓 開錠中";
+        color = "green";
+        message = `${datetime} に ${person} によって開錠されました`;
+      } else {
+        statusText = "🔒 施錠中";
+        color = "red";
+        message = `${datetime} に ${person} によって施錠されました`;
+      }
+
+      // 状態を更新
+      document.getElementById("status").textContent = statusText;
+      document.getElementById("status").style.color = color;
+      currentStatus = status;
+
+      // コンソールログで確認
+      console.log(message);
+
+      // メール送信用APIにPOSTリクエスト（仮想エンドポイント）
+      fetch("https://script.google.com/macros/s/AKfycbwvnxhYIdgY5e4QLO51pjDFuwRqm2KLQERMsaDkx5QC4N0axxnumiMNBhxDMNVWV2Da/exec", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          to: "genjinzhizuosuo@gmail.com",
+          subject: "開錠/施錠通知",
+          body: message
+        })
+      }).then(response => {
+        if (!response.ok) throw new Error("メール送信に失敗しました");
+        return response.text();
+      }).then(data => {
+        alert("メール送信成功: " + message);
+      }).catch(error => {
+        alert("メール送信エラー: " + error.message);
+      });
+    }
+  </script>
+
+</body>
+</html>
