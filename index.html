@@ -12,7 +12,6 @@
     #status {
       font-size: 48px;
       margin-bottom: 30px;
-      color: green;
     }
     select, button {
       font-size: 20px;
@@ -23,7 +22,7 @@
 </head>
 <body>
 
-  <h1>研究室 開錠・施錠 管理ページ Ver1.3</h1>
+  <h1>研究室 開錠・施錠 管理ページ Ver1.4</h1>
 
   <div id="status">🔓 開錠中</div>
 
@@ -34,7 +33,7 @@
       <option value="堂林">堂林</option>
       <option value="白崎">白崎</option>
       <option value="澤田">澤田</option>
-     <option value="安藤">安藤</option>
+      <option value="安藤">安藤</option>
       <option value="森高">森高</option>
       <option value="小山">小山</option>
       <option value="中村">中村</option>
@@ -49,8 +48,6 @@
   </div>
 
   <script>
-    let currentStatus = 'open'; // 初期状態は開錠
-
     function setStatus(status) {
       const person = document.getElementById("person").value;
       const now = new Date();
@@ -72,32 +69,29 @@
       // 状態を更新
       document.getElementById("status").textContent = statusText;
       document.getElementById("status").style.color = color;
-      currentStatus = status;
+
+      // 状態をローカルストレージに保存
+      const state = { status, person, datetime };
+      localStorage.setItem('lockStatus', JSON.stringify(state));
 
       // コンソールログで確認
       console.log(message);
-
-      // メール送信用APIにPOSTリクエスト（仮想エンドポイント）
-      fetch("https://script.google.com/macros/s/AKfycbwL3sVWxHpTCDTYPFAaW_I0jD-Phg6NfE-Ws6BXMJI1efXY0U62-046fWe_2cRRrnh-/exec", {
-        method: "POST",
-        mode: "no-cors", // モードを no-cors に設定
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          to: "m22237@g.metro-cit.ac.jp",
-          subject: "開錠/施錠通知",
-          body: message
-        })
-      }).then(response => {
-        if (!response.ok) throw new Error("メール送信に失敗しました");
-        return response.text();
-      }).then(data => {
-        alert("メール送信成功: " + message);
-      }).catch(error => {
-        alert("メール送信エラー: " + error.message);
-      });
     }
+
+    // ページ読み込み時にローカルストレージから状態を復元
+    window.onload = function() {
+      const savedState = localStorage.getItem('lockStatus');
+      if (savedState) {
+        const { status, person, datetime } = JSON.parse(savedState);
+        let statusText = status === 'open' ? "🔓 開錠中" : "🔒 施錠中";
+        let color = status === 'open' ? "green" : "red";
+
+        document.getElementById("status").textContent = statusText;
+        document.getElementById("status").style.color = color;
+
+        console.log(`${datetime} に ${person} によって状態が復元されました`);
+      }
+    };
   </script>
 
 </body>
