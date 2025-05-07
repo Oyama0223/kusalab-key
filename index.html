@@ -22,7 +22,7 @@
 </head>
 <body>
 
-  <h1>研究室 開錠・施錠 管理ページ Ver2.1</h1>
+  <h1>研究室 開錠・施錠 管理ページ Ver2.2</h1>
 
   <div id="status">🔓 開錠中</div>
 
@@ -48,55 +48,76 @@
   </div>
 
   <script>
-    const serverUrl = "https://script.google.com/macros/s/AKfycbzWHRAWTWw7byuwaDG6BhLjDYjqZYDHZ_-LqHzO-Gjern0ZO8qmXKPBK7Rp96eaESbY/exec"; // Google Apps ScriptのURLに置き換える
+    const serverUrl = "https://script.google.com/macros/s/AKfycbwEP94ipr5MdsayaIzR3RTAvbnOplPxszqYvgzMwxD0V0_Hf9Eixn2zXPY1_49mZlYb/exec";
 
     async function setStatus(status) {
       const person = document.getElementById("person").value;
       const now = new Date();
       const datetime = now.toLocaleString('ja-JP');
-      let statusText = status === 'open' ? "🔓 開錠中" : "🔒 施錠中";
-      let color = status === 'open' ? "green" : "red";
-      let message = `${datetime} に ${person} によって${status === 'open' ? '開錠' : '施錠'}されました`;
+      let statusText = "";
+      let color = "";
+      let message = "";
+
+      if (status === 'open') {
+        statusText = "🔓 開錠中";
+        color = "green";
+        message = `${datetime} に ${person} によって開錠されました`;
+      } else {
+        statusText = "🔒 施錠中";
+        color = "red";
+        message = `${datetime} に ${person} によって施錠されました`;
+      }
 
       // 状態を更新
       document.getElementById("status").textContent = statusText;
       document.getElementById("status").style.color = color;
 
-      // サーバーに送信
+      // 状態をローカルストレージに保存
+      const state = { status, person, datetime };
+      localStorage.setItem('lockStatus', JSON.stringify(state));
+
+      // サーバーに状態を送信
+      const body = JSON.stringify({ status, person, datetime });
+
       try {
         await fetch(serverUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ status, person, datetime })
+          headers: { "Content-Type": "application/json" },
+          body,
+          mode: "no-cors", // CORS制限を回避
         });
-        console.log("サーバーに状態を送信しました:", message);
+        console.log("サーバーに状態を送信しました:", body);
       } catch (error) {
         console.error("サーバー送信エラー:", error);
       }
     }
 
-    async function fetchStatus() {
-      try {
-        const response = await fetch(serverUrl);
-        const data = await response.json();
-        const { status, person, datetime } = data;
-
+    // ページ読み込み時にローカルストレージから状態を復元
+    window.onload = function() {
+      const savedState = localStorage.getItem('lockStatus');
+      if (savedState) {
+        const { status, person, datetime } = JSON.parse(savedState);
         let statusText = status === 'open' ? "🔓 開錠中" : "🔒 施錠中";
         let color = status === 'open' ? "green" : "red";
 
         document.getElementById("status").textContent = statusText;
         document.getElementById("status").style.color = color;
 
-        console.log(`${datetime} に ${person} によって状態を復元しました`);
+        console.log(`${datetime} に ${person} によって状態が復元されました`);
+      }
+
+      // サーバーから最新の状態を取得
+      fetchStatus();
+    };
+
+    async function fetchStatus() {
+      try {
+        const response = await fetch(serverUrl, { method: "GET", mode: "no-cors" });
+        console.log("サーバーからのレスポンス:", response);
       } catch (error) {
         console.error("状態取得エラー:", error);
       }
     }
-
-    // ページ読み込み時にサーバーから状態を取得
-    window.onload = fetchStatus;
   </script>
 
 </body>
