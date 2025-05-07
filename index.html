@@ -22,7 +22,7 @@
 </head>
 <body>
 
-  <h1>!!!メンテ中!!!研究室 開錠・施錠 管理ページ Ver2.5</h1>
+  <h1>研究室 開錠・施錠 管理ページ Ver1.5</h1>
 
   <div id="status">🔓 開錠中</div>
 
@@ -48,8 +48,6 @@
   </div>
 
   <script>
-    const scriptUrl = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
-
     function setStatus(status) {
       const person = document.getElementById("person").value;
       const now = new Date();
@@ -61,74 +59,59 @@
       if (status === 'open') {
         statusText = "🔓 開錠中";
         color = "green";
-        message = `${datetime} に ${person} によって開錠されました`;
+        message = ${datetime} に ${person} によって開錠されました;
       } else {
         statusText = "🔒 施錠中";
         color = "red";
-        message = `${datetime} に ${person} によって施錠されました`;
+        message = ${datetime} に ${person} によって施錠されました;
       }
 
       // 状態を更新
       document.getElementById("status").textContent = statusText;
       document.getElementById("status").style.color = color;
 
-      // データをスプレッドシートに送信
-      fetch(scriptUrl, {
+      // 状態をローカルストレージに保存
+      const state = { status, person, datetime };
+      localStorage.setItem('lockStatus', JSON.stringify(state));
+
+      // コンソールログで確認
+      console.log(message);
+
+      // メール送信用APIにPOSTリクエスト（仮想エンドポイント）
+      fetch("https://script.google.com/macros/s/AKfycbwL3sVWxHpTCDTYPFAaW_I0jD-Phg6NfE-Ws6BXMJI1efXY0U62-046fWe_2cRRrnh-/exec", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ person, status, datetime })
-      })
-        .then(response => response.json())
-        .then(data => {
-          console.log("最新の状態:", data);
-
-          // メール送信APIにPOSTリクエスト
-          sendEmail(message);
-
-          alert(`${data.datetime} に ${data.person}って ${data.status === 'open' ? '開錠' : '施錠'} が記録されました`);
-        })
-        .catch(error => {
-          console.error("データ送信エラー:", error);
-          alert("データ送信エラー: " + error.message);
-        });
-    }
-
-    function sendEmail(message) {
-      fetch("https://script.google.com/macros/s/ANOTHER_SCRIPT_ID/exec", {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        mode: "no-cors", // モードを no-cors に設定
+        headers: {
+            "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           to: "m22237@g.metro-cit.ac.jp",
           subject: "開錠/施錠通知",
           body: message
         })
-      })
-        .then(() => {
-          console.log("メール送信成功:", message);
-        })
-        .catch(error => {
-          console.error("メール送信エラー:", error);
-        });
+      }).then(response => {
+        if (!response.ok) throw new Error("メール送信");
+        return response.text();
+      }).then(data => {
+        alert("メール送信成功: " + message);
+      }).catch(error => {
+        alert("メール送信: " + error.message);
+      });
     }
 
-    // ページ読み込み時に最新状態を取得
+    // ページ読み込み時にローカルストレージから状態を復元
     window.onload = function() {
-      fetch(scriptUrl, { method: "GET" })
-        .then(response => response.json())
-        .then(data => {
-          const { status, person, datetime } = data;
-          const statusText = status === 'open' ? "🔓 開錠中" : "🔒 施錠中";
-          const color = status === 'open' ? "green" : "red";
+      const savedState = localStorage.getItem('lockStatus');
+      if (savedState) {
+        const { status, person, datetime } = JSON.parse(savedState);
+        let statusText = status === 'open' ? "🔓 開錠中" : "🔒 施錠中";
+        let color = status === 'open' ? "green" : "red";
 
-          document.getElementById("status").textContent = statusText;
-          document.getElementById("status").style.color = color;
+        document.getElementById("status").textContent = statusText;
+        document.getElementById("status").style.color = color;
 
-          console.log(`${datetime} に ${person} によって状態が復元されました`);
-        })
-        .catch(error => {
-          console.error("最新状態取得エラー:", error);
-        });
+        console.log(${datetime} に ${person} によって状態が復元されました);
+      }
     };
   </script>
 
