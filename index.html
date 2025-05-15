@@ -70,7 +70,10 @@
       const person = document.getElementById("person").value;
       const now = new Date();
       const datetime = now.toLocaleString('ja-JP');
-      const message = `${datetime} に ${person} によって${status === 'open' ? "開錠" : "施錠"}されました`;
+      const message = `${datetime} に ${person} によって${status === 'open' ? "開錠" : "施錠"}されました．
+ーーー
+自動メッセージ
+http://airship.jp/kusalab-key.html`;
 
       // 表示を即時更新
       document.getElementById("status").textContent = status === 'open' ? "🔓 開錠中" : "🔒 施錠中";
