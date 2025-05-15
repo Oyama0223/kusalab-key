@@ -18,13 +18,26 @@
       margin: 10px;
       padding: 10px 20px;
     }
+    #log {
+      margin-top: 40px;
+      text-align: left;
+      width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+      border-top: 1px solid #ccc;
+      padding-top: 20px;
+    }
+    .log-entry {
+      font-size: 16px;
+      margin: 5px 0;
+    }
   </style>
 </head>
 <body>
 
-  <h1>!!!メンテ中!!!研究室 開錠・施錠 管理ページ Ver1.4</h1>
+  <h1>研究室 開錠・施錠 管理ページ Ver1.4</h1>
 
-  <div id="status">🔓 開錠中</div>
+  <div id="status">🔄 状態を取得中...</div>
 
   <div>
     <label for="person">操作した人物を選択：</label>
@@ -47,72 +60,88 @@
     <button onclick="setStatus('locked')">施錠</button>
   </div>
 
+  <div id="log">
+    <h2>履歴</h2>
+    <div id="log-entries">🔄 ログを読み込み中...</div>
+  </div>
+
   <script>
     function setStatus(status) {
       const person = document.getElementById("person").value;
       const now = new Date();
       const datetime = now.toLocaleString('ja-JP');
-      let statusText = "";
-      let color = "";
-      let message = "";
+      const message = `${datetime} に ${person} によって${status === 'open' ? "開錠" : "施錠"}されました`;
 
-      if (status === 'open') {
-        statusText = "🔓 開錠中";
-        color = "green";
-        message = `${datetime} に ${person} によって開錠されました`;
-      } else {
-        statusText = "🔒 施錠中";
-        color = "red";
-        message = `${datetime} に ${person} によって施錠されました`;
-      }
+      // 表示を即時更新
+      document.getElementById("status").textContent = status === 'open' ? "🔓 開錠中" : "🔒 施錠中";
+      document.getElementById("status").style.color = status === 'open' ? "green" : "red";
 
-      // 状態を更新
-      document.getElementById("status").textContent = statusText;
-      document.getElementById("status").style.color = color;
+      // PHPへ状態とログ保存
+      fetch("set_status.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, person, datetime })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) throw new Error(data.error || "状態の保存に失敗しました");
+        console.log("状態保存成功:", message);
+        loadLog(); // ログ更新
+      })
+      .catch(err => {
+        alert("状態保存エラー: " + err.message);
+      });
 
-      // 状態をローカルストレージに保存
-      const state = { status, person, datetime };
-      localStorage.setItem('lockStatus', JSON.stringify(state));
-
-      // コンソールログで確認
-      console.log(message);
-
-      // メール送信用APIにPOSTリクエスト（仮想エンドポイント）
+      // メール送信（Google Apps Script 経由）
       fetch("https://script.google.com/macros/s/AKfycbwL3sVWxHpTCDTYPFAaW_I0jD-Phg6NfE-Ws6BXMJI1efXY0U62-046fWe_2cRRrnh-/exec", {
         method: "POST",
-        mode: "no-cors", // モードを no-cors に設定
+        mode: "no-cors",
         headers: {
-            "Content-Type": "application/json"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           to: "m22237@g.metro-cit.ac.jp",
           subject: "開錠/施錠通知",
           body: message
         })
-      }).then(response => {
-        if (!response.ok) throw new Error("メール送信");
-        return response.text();
-      }).then(data => {
-        alert("メール送信成功: " + message);
-      }).catch(error => {
-        alert("メール送信エラー: " + error.message);
       });
     }
 
-    // ページ読み込み時にローカルストレージから状態を復元
+    // 初期状態と履歴の読み込み
     window.onload = function() {
-      const savedState = localStorage.getItem('lockStatus');
-      if (savedState) {
-        const { status, person, datetime } = JSON.parse(savedState);
-        let statusText = status === 'open' ? "🔓 開錠中" : "🔒 施錠中";
-        let color = status === 'open' ? "green" : "red";
+      fetch("get_status.php")
+        .then(res => res.json())
+        .then(data => {
+          const { status, person, datetime } = data;
+          const statusText = status === 'open' ? "🔓 開錠中" : "🔒 施錠中";
+          const color = status === 'open' ? "green" : "red";
 
-        document.getElementById("status").textContent = statusText;
-        document.getElementById("status").style.color = color;
+          document.getElementById("status").textContent = statusText;
+          document.getElementById("status").style.color = color;
 
-        console.log(`${datetime} に ${person} によって状態が復元されました`);
-      }
+          console.log(`${datetime} に ${person} によって状態が設定されました`);
+        })
+        .catch(err => {
+          document.getElementById("status").textContent = "⚠️ 状態取得失敗";
+          document.getElementById("status").style.color = "gray";
+        });
+
+      loadLog();
     };
+
+    // ログの読み込み関数
+    function loadLog() {
+      fetch("get_log.php")
+        .then(res => res.text())
+        .then(data => {
+          const logDiv = document.getElementById("log-entries");
+          const lines = data.trim().split("\n").reverse();
+          logDiv.innerHTML = lines.map(line => `<div class="log-entry">${line}</div>`).join("");
+        })
+        .catch(err => {
+          document.getElementById("log-entries").textContent = "⚠️ ログ読み込み失敗";
+        });
+    }
   </script>
 
 </body>
